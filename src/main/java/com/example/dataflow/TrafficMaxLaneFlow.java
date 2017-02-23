@@ -399,15 +399,8 @@ public class TrafficMaxLaneFlow {
         .apply(BigQueryIO.Write.to(tableRef).withSchema(FormatMaxesFn.getSchema()));
 
     PipelineResult result = pipeline.run();
-    /*
-    if (options.isStreaming() && !options.getInputFile().isEmpty()) {
-      // Inject the data into the Pub/Sub topic with a Dataflow batch pipeline.
-      dataflowUtils.runInjectorPipeline(options.getInputFile(), options.getPubsubTopic());
-    }
-    */
-
     // dataflowUtils will try to cancel the pipeline and the injector before the program exists.
-    dataflowUtils.waitToFinish(result);
+    // dataflowUtils.waitToFinish(result);
   }
 
   private static Integer tryIntParse(String number) {

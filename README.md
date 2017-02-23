@@ -75,7 +75,7 @@ It'll run for a bit and you should see some output at the end like this:
 
 Try running the starter pipeline as a quick smoke test:
 
-```
+```bash
 project=$(gcloud info | egrep ^Project | tr -d '[]' | awk '{ print $2 }')
 mvn exec:java -Dexec.mainClass=com.example.dataflow.StarterPipeline -Dexec.args="--project=$project --runner=DataflowRunner"
 ```
@@ -120,7 +120,7 @@ Note the fully-qualified topic name, which is often required.
 
 Let's start the streaming pipeline (important to run this first, because the next job can consume your CPU quota):
 
-```
+```bash
 sh runTrafficMaxLaneFlow.sh
 ```
 
@@ -135,7 +135,7 @@ are not yet any messages available on the newly-created topic.
 So let's, run the injector pipeline to create some messages. This pipeline will inject data
 into the pubsub topic for the streaming job to consume.
 
-```
+```bash
 sh runInjector.sh
 ```
 

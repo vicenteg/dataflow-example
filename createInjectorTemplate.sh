@@ -2,7 +2,7 @@
 
 project=$(gcloud info | egrep ^Project | tr -d '[]' | awk '{ print $2 }')
 stagingbucket=gs://$project-staging
-gsutil ls $stagingbucket || gsutil mb $stagingbucket
+gsutil ls $stagingbucket >/dev/null || gsutil mb $stagingbucket
 
 mvn compile exec:java \
 	-Dexec.mainClass=com.example.dataflow.PubsubFileInjector \

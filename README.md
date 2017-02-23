@@ -161,6 +161,10 @@ Back over in your console monitoring tab for the max lane flow pipeline, you sho
 
 ![maxlaneflow elements](images/maxlaneflow_elements.png)
 
+
+If any of the previous jobs are still running, stop them when you're ready to move on to the next section.
+
+
 # Templates
 
 So far we've launched dataflow jobs from maven. This works in development, but may not be ideal for production.
@@ -168,4 +172,23 @@ So far we've launched dataflow jobs from maven. This works in development, but m
 In production you may not want to compile the job each time, and you may not want to have to have a dependency on maven
 to submit the job. This is where [Cloud Dataflow templates](https://cloud.google.com/dataflow/docs/templates/overview) come in.
 
+There's another couple of scripts in this project - `createInjectorTemplate.sh` and `createTrafficMaxLaneFlowTemplate.sh`.
+
+These will, as the names suggest, create templates for the jobs so that we can run them without our development tools.
+
+Execute them in turn and maven will compile the pipelines as before but this time with the addition of the 
+`--templateLocation` option, will write the pipeline definition out to GCS so we can launch the already-staged 
+pipeline without rebuilding.
+
+```bash
+sh createInjectorTemplate.sh
+sh createTrafficMaxLaneFlowTemplate.sh
+```
+
+Now, you can run each job from the template:
+
+```bash
+sh runTrafficMaxLaneFlowTemplate.sh
+sh runInjectorTemplate.sh
+```
 

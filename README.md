@@ -8,9 +8,7 @@ This repo contains an example dataflow project that includes a batch pipeline, a
 
 To try this, you'll need to have set up a Google Cloud Platform project. You can take advantage of the [GCP free trial](https://console.cloud.google.com/freetrial) if you like.
 
-You can skip these steps if you're certain Pub/Sub is already ready to use in your project.
-
-Next, run through the Pub/Sub [Quickstart: Using the Console](https://cloud.google.com/pubsub/docs/quickstart-console) guide to make sure you can use Pub/Sub.
+Enable the APIs required for this tutorial by following the section "Before you begin" at this [quickstart page](https://cloud.google.com/dataflow/docs/quickstarts/quickstart-java-maven).
 
 ## Set up a compute instance
 
@@ -24,48 +22,29 @@ Be sure to allow all API access from the instance:
 
 In the console, launch cloud shell. 
 
-# Service Account authentication
-
-Next, head over to [IAM & Admin > Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts).
-
-There should be a service account of the form `<number>-compute@developer.gserviceaccount.com`. 
-Click the menu icon all the way to right and click "Create key".
-
-![create key](images/create_key.png)
-
-This will create the key and download it in your browser. Find the downloaded file, open it in a text editor, and copy all the text to your clipboard.
-
-Or, if you're on a machine running macOS, you can do the following to put the contents of the key file on the clipboard (substituting the path to your downloaded key):
-
-```
-cat ~/Downloads/df-workshop-cec5ac020908.json | pbcopy
-```
 
 In cloud shell, SSH into your instance as follows, substituting your instance's name as needed:
 
 ```
 gcloud compute ssh instance-1
 ```
- 
-You will probably be promted to create an ssh key - follow the prompts. A passphrase for your ssh key is not necessary for this workshop.
 
-Once logged in, activate your service account. The following will activate the default compute service account by 
-reading the key file from stdin. You'll paste it in there.
+As of this writing (Feb 2017), the latest gcloud SDK is version 145.0.0. Ubuntu ships with an OS-packaged 140.0.0, so we'll update it. We do this so that we can use the `gcloud alpha` commands for Dataflow and Pub/sub.
+Update to the latest gcloud SDK as follows ([reference](https://cloud.google.com/sdk/docs/quickstart-debian-ubuntu)):
 
+```bash
+# Create an environment variable for the correct distribution
+export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
+
+# Add the Cloud SDK distribution URI as a package source
+echo "deb https://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+
+# Import the Google Cloud Platform public key
+curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+
+# Update the package list and install the Cloud SDK
+sudo apt-get update && sudo apt-get install google-cloud-sdk
 ```
-gcloud auth activate-service-account --key-file /dev/stdin
-```
-
-Paste your key (CMD-V on macOS) into the console. Press Enter to start a new line, and type CTRL-D. 
-
-If everything went well, you should see:
-
-```
-Activated service account credentials for: [<number>-compute@developer.gserviceaccount.com]
-```
-
- https://console.developers.google.com/apis/api/cloudresourcemanager.googleapis.com/overview
-
 
 Then install git, openjdk 8 and maven:
 
@@ -94,10 +73,91 @@ It'll run for a bit and you should see some output at the end like this:
 [INFO] ------------------------------------------------------------------------
 ```
 
-Now, start the streaming pipeline:
+Try running the starter pipeline as a quick smoke test:
+
+```
+project=$(gcloud info | egrep ^Project | tr -d '[]' | awk '{ print $2 }')
+mvn exec:java -Dexec.mainClass=com.example.dataflow.StarterPipeline -Dexec.args="--project=$project --runner=DataflowRunner"
+```
+
+When this completes, you should see something like the following:
+
+```
+INFO: To access the Dataflow monitoring console, please navigate to https://console.developers.google.com/project/df-workshop-159603/dataflow/job/2017-02-23_05_08_19-7432109134082082023
+Submitted job: 2017-02-23_05_08_19-7432109134082082023
+Feb 23, 2017 1:08:20 PM org.apache.beam.runners.dataflow.DataflowRunner run
+INFO: To cancel the job using the 'gcloud' tool, run:
+> gcloud beta dataflow jobs --project=df-workshop-159603 cancel 2017-02-23_05_08_19-7432109134082082023
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 10.552 s
+[INFO] Finished at: 2017-02-23T13:08:20+00:00
+[INFO] Final Memory: 21M/57M
+[INFO] ------------------------------------------------------------------------
+```
+
+Note the URL on the first line. Copy and paste that into your browser to see the job status.
+
+
+
+Back in the shell on your instance, let's create a Pub/sub topic:
+
+```bash
+gcloud alpha pubsub topics create traffic-topic
+```
+
+Confirm for yourself that it's there:
+
+```bash
+gcloud alpha pubsub topics list
+---
+topic: projects/df-workshop-159603/topics/traffic-topic
+topicId: traffic-topic
+```
+
+Note the fully-qualified topic name, which is often required.
+
+Let's start the streaming pipeline (important to run this first, because the next job can consume your CPU quota):
 
 ```
 sh runTrafficMaxLaneFlow.sh
 ```
 
-Go to the console and 
+This pipeline will read from a Pub/Sub topic, extract the data into a Java object,
+create sliding windows, and calculate the maximum lane flow per window.
+
+Locate the monitoring console URL in the output (it will be an INFO level log message).
+Open the URL in a new tab. After about 90 seconds, you should see all of the dataflow
+steps enter the "Running" state. Though they're running, they won't be doing much since there
+are not yet any messages available on the newly-created topic.
+
+So let's, run the injector pipeline to create some messages. This pipeline will inject data
+into the pubsub topic for the streaming job to consume.
+
+```
+sh runInjector.sh
+```
+
+Once again, locate the console monitoring URL in the output, and open it in a new tab. 
+
+You can note that this time, the job is a batch, rather than streaming, job. This means that the input is bounded,
+which makes sense given that we are targeting a single file.
+
+After about 90 seconds, you should start to see a change - you'll see a number of elements starting to pass through
+the pipeline, as evidenced by an **elements/s** metric inside of each step:
+
+![step elements](images/step_elements.png)
+
+After a few minutes, the number will increase pretty dramatically as the job autoscales up to increase throughput:
+
+![step autoscaled](images/step_autoscaled.png)
+
+And in the Summary pane, you'll see the history of the worker count:
+
+![workers](images/workers.png)
+
+Back over in your console monitoring tab for the max lane flow pipeline, you should start to see elements moving through:
+
+![maxlaneflow elements](images/maxlaneflow_elements.png)
+

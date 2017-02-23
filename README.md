@@ -161,3 +161,11 @@ Back over in your console monitoring tab for the max lane flow pipeline, you sho
 
 ![maxlaneflow elements](images/maxlaneflow_elements.png)
 
+# Templates
+
+So far we've launched dataflow jobs from maven. This works in development, but may not be ideal for production.
+
+In production you may not want to compile the job each time, and you may not want to have to have a dependency on maven
+to submit the job. This is where [Cloud Dataflow templates](https://cloud.google.com/dataflow/docs/templates/overview) come in.
+
+

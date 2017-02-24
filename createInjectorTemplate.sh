@@ -6,4 +6,4 @@ gsutil ls $stagingbucket >/dev/null || gsutil mb $stagingbucket
 
 mvn compile exec:java \
 	-Dexec.mainClass=com.example.dataflow.PubsubFileInjector \
-	-Dexec.args="--project=$project --outputTopic=projects/$project/topics/traffic-topic --input=gs://dataflow-samples/traffic_sensor/Freeways-5Minaa2010-01-01_to_2010-02-15.csv --templateLocation="$stagingbucket/PubsubFileInjector" --runner=DataflowRunner"
+	-Dexec.args="--project=$project --numWorkers=1 --maxNumWorkers=3 --outputTopic=projects/$project/topics/traffic-topic --input=gs://dataflow-samples/traffic_sensor/Freeways-5Minaa2010-01-01_to_2010-02-15.csv --templateLocation="$stagingbucket/PubsubFileInjector" --runner=DataflowRunner"

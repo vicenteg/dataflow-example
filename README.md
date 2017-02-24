@@ -2,6 +2,8 @@
 
 This repo contains an example dataflow project that includes a batch pipeline, and a streaming pipeline.
 
+This is an update of https://github.com/james-google/event-streams-dataflow
+
 # Pre-requisites
 
 ## Get a Google Cloud Platform Project

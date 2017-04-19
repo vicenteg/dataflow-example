@@ -99,8 +99,27 @@ INFO: To cancel the job using the 'gcloud' tool, run:
 [INFO] ------------------------------------------------------------------------
 ```
 
-Note the URL on the first line. Copy and paste that into your browser to see the job status.
+If this does not complete successfully and you see output like this:
 
+```
+[ERROR] Failed to execute goal org.codehaus.mojo:exec-maven-plugin:1.4.0:java (default-cli) on project my-dataflow-project: An exception occured while executing the Java class. null: InvocationTargetException: Failed to construct instance from factory method DataflowRunner#fromOptions(interface org.apache.beam.sdk.options.PipelineOptions): DataflowRunner requires gcpTempLocation, but failed to retrieve a value from PipelineOptions: Unable to verify project with ID bq-workshop-160115: Unable to get project number: 403 Forbidden
+[ERROR] {
+[ERROR] "code" : 403,
+[ERROR] "errors" : [ {
+[ERROR] "domain" : "global",
+[ERROR] "message" : "Google Cloud Resource Manager API has not been used in project bq-workshop-160115 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudresourcemanager.googleapis.com/overview?project=YOURPROJECT then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.",
+[ERROR] "reason" : "forbidden"
+[ERROR] } ],
+[ERROR] "message" : "Google Cloud Resource Manager API has not been used in project bq-workshop-160115 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudresourcemanager.googleapis.com/overview?project=YOURPROJECT then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.",
+[ERROR] "status" : "PERMISSION_DENIED"
+[ERROR] }
+
+```
+
+Note the URL that's in the `message` key. Use that URL to go and enable the Cloud Resource Manager API and try again.
+
+
+If you were successful, note the URL on the first line. Copy and paste that into your browser to see the job status.
 
 
 Back in the shell on your instance, let's create a Pub/sub topic:

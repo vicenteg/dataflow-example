@@ -153,7 +153,7 @@ Open the URL in a new tab. After about 90 seconds, you should see all of the dat
 steps enter the "Running" state. Though they're running, they won't be doing much since there
 are not yet any messages available on the newly-created topic.
 
-So let's, run the injector pipeline to create some messages. This pipeline will inject data
+So let's run the injector pipeline to create some messages. This pipeline will inject data
 into the pubsub topic for the streaming job to consume.
 
 ```bash
@@ -162,7 +162,7 @@ sh runInjector.sh
 
 Once again, locate the console monitoring URL in the output, and open it in a new tab. 
 
-You can note that this time, the job is a batch, rather than streaming, job. This means that the input is bounded,
+You can note that this time, the job is a batch job, rather than a streaming job. This means that the input is bounded,
 which makes sense given that we are targeting a single file.
 
 After about 90 seconds, you should start to see a change - you'll see a number of elements starting to pass through
@@ -213,3 +213,8 @@ sh runTrafficMaxLaneFlowTemplate.sh
 sh runInjectorTemplate.sh
 ```
 
+That's it for now.
+
+## TODO:
+
+Add visualization back in.

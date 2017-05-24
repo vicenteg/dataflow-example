@@ -147,19 +147,19 @@ public class TrafficMaxLaneFlow {
       return this.recordedTimestamp;
     }
 
-     Integer getLaneFlow() {
+    Integer getLaneFlow() {
       return this.laneFlow;
     }
 
-     Double getLaneAO() {
+    Double getLaneAO() {
       return this.laneAO;
     }
 
-     Double getLaneAS() {
+    Double getLaneAS() {
       return this.laneAS;
     }
 
-     Integer getTotalFlow() {
+    Integer getTotalFlow() {
       return this.totalFlow;
     }
   }
@@ -178,7 +178,7 @@ public class TrafficMaxLaneFlow {
 
     private final boolean outputTimestamp;
 
-     ExtractFlowInfoFn(boolean outputTimestamp) {
+    ExtractFlowInfoFn(boolean outputTimestamp) {
       this.outputTimestamp = outputTimestamp;
     }
 

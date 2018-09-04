@@ -17,9 +17,8 @@
 package com.example.dataflow;
 
 import org.apache.beam.sdk.Pipeline;
-import org.apache.beam.sdk.coders.StringUtf8Coder;
-import org.apache.beam.sdk.io.PubsubIO;
 import org.apache.beam.sdk.io.TextIO;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
@@ -80,13 +79,12 @@ public class PubsubFileInjector {
     Pipeline pipeline = Pipeline.create(options);
 
     pipeline
-        .apply(TextIO.Read.from(options.getInput()))
+        .apply(TextIO.read().from(options.getInput()))
         .apply(ParDo.of(new FilterHeaderAndEmpties()))
         .apply(
-            PubsubIO.<String>write()
-                .topic(options.getOutputTopic())
-                .withCoder(StringUtf8Coder.of())
-                .timestampLabel("timestamp"));
+            PubsubIO.writeStrings()
+                    .to(options.getOutputTopic())
+                    .withTimestampAttribute("timestamp"));
 
     pipeline.run();
   }

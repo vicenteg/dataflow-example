@@ -16,6 +16,7 @@ package com.example.dataflow;
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest;
+import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.util.Lists;
 import com.google.api.client.util.Sets;
 import com.google.api.services.bigquery.Bigquery;
@@ -29,22 +30,26 @@ import com.google.api.services.bigquery.model.TableSchema;
 import com.google.api.services.dataflow.Dataflow;
 import com.google.api.services.pubsub.Pubsub;
 import com.google.api.services.pubsub.model.Topic;
+import com.google.auth.Credentials;
+import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.cloud.hadoop.util.ChainingHttpRequestInitializer;
+import com.google.common.collect.ImmutableList;
 import org.apache.beam.runners.dataflow.DataflowPipelineJob;
 import org.apache.beam.runners.dataflow.DataflowRunner;
 import org.apache.beam.runners.dataflow.options.DataflowPipelineOptions;
 import org.apache.beam.runners.dataflow.util.MonitoringUtil;
 import org.apache.beam.runners.direct.DirectRunner;
 import org.apache.beam.sdk.PipelineResult;
-import org.apache.beam.sdk.options.BigQueryOptions;
+import org.apache.beam.sdk.extensions.gcp.auth.NullCredentialInitializer;
+import org.apache.beam.sdk.util.RetryHttpRequestInitializer;
 import org.apache.beam.sdk.util.Transport;
 import org.joda.time.Duration;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * The utility class that sets up and tears down external resources, starts the Google Cloud Pub/Sub
@@ -182,7 +187,14 @@ public class DataflowExampleUtils {
   private void setupBigQueryTable(
       String projectId, String datasetId, String tableId, TableSchema schema) throws IOException {
     if (bigQueryClient == null) {
-      bigQueryClient = Transport.newBigQueryClient(options.as(BigQueryOptions.class)).build();
+      bigQueryClient = new Bigquery.Builder(
+              Transport.getTransport(),
+              Transport.getJsonFactory(),
+              chainHttpRequestInitializer(
+                      options.getGcpCredential(),
+                      // Do not log 404. It clutters the output and is possibly even required by the caller.
+                      new RetryHttpRequestInitializer(ImmutableList.of(404))))
+              .build();
     }
 
     Datasets datasetService = bigQueryClient.datasets();
@@ -217,7 +229,13 @@ public class DataflowExampleUtils {
 
   private void setupPubsubTopic(String topic) throws IOException {
     if (pubsubClient == null) {
-      pubsubClient = Transport.newPubsubClient(options).build();
+      pubsubClient = new Pubsub.Builder(Transport.getTransport(),
+              Transport.getJsonFactory(),
+              chainHttpRequestInitializer(
+                      options.getGcpCredential(),
+                      // Do not log 404. It clutters the output and is possibly even required by the caller.
+                      new RetryHttpRequestInitializer(ImmutableList.of(404))))
+              .build();
     }
     if (executeNullIfNotFound(pubsubClient.projects().topics().get(topic)) == null) {
       pubsubClient.projects().topics().create(topic, new Topic().setName(topic)).execute();
@@ -231,7 +249,13 @@ public class DataflowExampleUtils {
    */
   private void deletePubsubTopic(String topic) throws IOException {
     if (pubsubClient == null) {
-      pubsubClient = Transport.newPubsubClient(options).build();
+      pubsubClient = new Pubsub.Builder(Transport.getTransport(),
+              Transport.getJsonFactory(),
+              chainHttpRequestInitializer(
+                      options.getGcpCredential(),
+                      // Do not log 404. It clutters the output and is possibly even required by the caller.
+                      new RetryHttpRequestInitializer(ImmutableList.of(404))))
+              .build();
     }
     if (executeNullIfNotFound(pubsubClient.projects().topics().get(topic)) != null) {
       pubsubClient.projects().topics().delete(topic).execute();
@@ -352,6 +376,18 @@ public class DataflowExampleUtils {
       } else {
         throw e;
       }
+    }
+  }
+
+
+  private static HttpRequestInitializer chainHttpRequestInitializer(
+          Credentials credential, HttpRequestInitializer httpRequestInitializer) {
+    if (credential == null) {
+      return new ChainingHttpRequestInitializer(
+          new NullCredentialInitializer(), httpRequestInitializer);
+    } else {
+      return new ChainingHttpRequestInitializer(
+          new HttpCredentialsAdapter(credential), httpRequestInitializer);
     }
   }
 }

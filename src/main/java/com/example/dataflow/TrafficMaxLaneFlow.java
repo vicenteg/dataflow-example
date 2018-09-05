@@ -393,7 +393,7 @@ public class TrafficMaxLaneFlow {
                 SlidingWindows.of(Duration.standardMinutes(options.getWindowDuration()))
                     .every(Duration.standardMinutes(options.getWindowSlideEvery()))))
         .apply(new MaxLaneFlow())
-        .apply(BigQueryIO.<TableRow>write().to(tableRef).withSchema(FormatMaxesFn.getSchema()));
+        .apply(BigQueryIO.<TableRow>writeTableRows().to(tableRef).withSchema(FormatMaxesFn.getSchema()));
 
     PipelineResult result = pipeline.run();
     // dataflowUtils will try to cancel the pipeline and the injector before the program exists.
